@@ -1,0 +1,33 @@
+{% extends 'chess_app/base.html' %}
+
+{% block title %}Joueurs en ligne - ChessLab{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Joueurs en ligne</h1>
+    <a href="{% url 'chess_app:create_game' %}" class="btn btn-primary">Créer une partie</a>
+</div>
+
+<div class="row">
+    {% for player in players %}
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5>{{ player.username }}</h5>
+                {% if player != user %}
+                    <a href="{% url 'chess_app:create_game' %}" class="btn btn-sm btn-success">
+                        Défier
+                    </a>
+                {% else %}
+                    <span class="badge bg-primary">Vous</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <p class="text-muted">Aucun joueur en ligne</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

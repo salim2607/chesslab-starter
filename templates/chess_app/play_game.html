@@ -1,0 +1,429 @@
+{% extends 'chess_app/base.html' %}
+
+{% block title %}Partie #{{ game.id }} - ChessLab{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card game-card">
+            <div class="card-header bg-dark text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">♛ Partie #{{ game.id }}</h4>
+                    <span class="badge {% if game.status == 'active' %}bg-success{% else %}bg-warning{% endif %}">
+                        {{ game.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body text-center p-4">
+                <!-- Plateau d'échecs -->
+                <div id="board" style="width: 400px; margin: 0 auto; margin-bottom: 20px;"></div>
+                
+                <!-- Contrôles du jeu -->
+                <div class="game-controls mb-4">
+                    <button id="flipBoard" class="btn btn-outline-secondary btn-sm">
+                        🔄 Retourner le plateau
+                    </button>
+                    <button id="resignBtn" class="btn btn-outline-danger btn-sm ms-2" 
+                            {% if user_role == 'spectator' or user_role == 'available_white' or user_role == 'available_black' %}disabled{% endif %}>
+                        🏳️ Abandonner
+                    </button>
+                </div>
+                
+                <!-- Statut du jeu -->
+                <div id="game-status" class="mb-4">
+                    <div class="alert alert-info shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>🎯 Statut:</strong> {{ game.get_status_display }}
+                                {% if game.status == 'active' %}
+                                    - <strong>Tour:</strong> 
+                                    <span id="current-turn" class="badge {% if game.current_turn == 'white' %}bg-light text-dark{% else %}bg-dark{% endif %} text-capitalize">
+                                        {{ game.current_turn }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted small">
+                                Partie #{{ game.id }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boutons pour rejoindre la partie -->
+                {% if user_role == 'available_white' or user_role == 'available_black' %}
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h5 class="mb-3">🎮 Rejoindre la partie</h5>
+                    <p class="text-muted mb-3">Choisissez votre camp :</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        {% if user_role == 'available_white' %}
+                            <a href="{% url 'chess_app:join_game' game.id 'white' %}" class="btn btn-light border btn-lg shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-2">♔</span>
+                                    <div class="text-start">
+                                        <strong>Jouer Blanc</strong>
+                                        <br>
+                                        <small class="text-muted">Premier coup</small>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endif %}
+                        {% if user_role == 'available_black' %}
+                            <a href="{% url 'chess_app:join_game' game.id 'black' %}" class="btn btn-dark btn-lg shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-2 me-2">♚</span>
+                                    <div class="text-start">
+                                        <strong>Jouer Noir</strong>
+                                        <br>
+                                        <small class="text-white-50">Réponse aux blancs</small>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Carte des joueurs -->
+        <div class="card game-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">👥 Joueurs</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="fs-4 me-2">♔</span>
+                        <strong class="fs-6">Blanc:</strong> 
+                    </div>
+                    <div class="ms-4">
+                        {% if game.white_player %}
+                            <span class="fw-bold text-dark">{{ game.white_player.username }}</span>
+                            {% if game.white_player == user %}
+                                <span class="badge bg-success ms-2">Vous</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted fst-italic">En attente d'un joueur...</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-dark text-white rounded">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="fs-4 me-2">♚</span>
+                        <strong class="fs-6">Noir:</strong> 
+                    </div>
+                    <div class="ms-4">
+                        {% if game.black_player %}
+                            <span class="fw-bold">{{ game.black_player.username }}</span>
+                            {% if game.black_player == user %}
+                                <span class="badge bg-success ms-2">Vous</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted fst-italic">En attente d'un joueur...</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Votre rôle -->
+                <div class="mt-4 p-3 bg-info text-white rounded">
+                    <strong>🎭 Votre rôle:</strong> 
+                    <div class="mt-2">
+                        {% if user_role == 'white' %}
+                            <span class="badge bg-light text-dark fs-6">Blanc (Vous jouez)</span>
+                        {% elif user_role == 'black' %}
+                            <span class="badge bg-dark fs-6">Noir (Vous jouez)</span>
+                        {% elif user_role == 'available_white' %}
+                            <span class="badge bg-warning text-dark fs-6">Peut rejoindre (Blanc)</span>
+                        {% elif user_role == 'available_black' %}
+                            <span class="badge bg-warning text-dark fs-6">Peut rejoindre (Noir)</span>
+                        {% else %}
+                            <span class="badge bg-secondary fs-6">Spectateur</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des mouvements -->
+        <div class="card game-card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">📋 Historique des mouvements</h5>
+            </div>
+            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <div id="moves-list" class="p-3">
+                    {% for move in game.moves.all %}
+                    <div class="border-bottom py-2 move-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-primary">{{ move.move_number }}.</strong>
+                                <span class="ms-2 fw-bold">{{ move.piece }}{{ move.to_square }}</span>
+                            </div>
+                            <small class="text-muted">{{ move.player.username }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fs-1">♟️</i>
+                        <p class="mt-2 mb-0">Aucun mouvement encore</p>
+                        <small>Les mouvements apparaitront ici</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const gameId = {{ game.id }};
+    const userRole = "{{ user_role }}";
+    const websocketUrl = "{{ websocket_url }}";
+    
+    let board = null;
+    let game = new Chess();
+    let chessSocket = null;
+    let isMyTurn = false;
+
+    // Initialisation du plateau avec état sauvegardé
+    function initializeBoard() {
+        const fen = "{{ game.board_state }}";
+        const startPosition = fen && fen !== 'None' ? fen : 'start';
+        
+        console.log('📍 Position chargée:', startPosition);
+        
+        board = Chessboard('board', {
+            draggable: true,
+            position: startPosition,
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+            orientation: userRole === 'black' ? 'black' : 'white'
+        });
+        
+        if (fen && fen !== 'None') {
+            game.load(fen);
+        }
+        
+        updateTurnIndicator();
+    }
+
+    function onDragStart(source, piece, position, orientation) {
+        if (!isMyTurn || userRole === 'spectator' || userRole.includes('available')) {
+            return false;
+        }
+        
+        const isWhitePiece = piece.search(/^w/) !== -1;
+        if ((userRole === 'white' && !isWhitePiece) || (userRole === 'black' && isWhitePiece)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    function onDrop(source, target) {
+        if (!isMyTurn) {
+            showNotification("Ce n'est pas votre tour !", 'warning');
+            return 'snapback';
+        }
+
+        const move = game.move({
+            from: source,
+            to: target,
+            promotion: 'q'
+        });
+
+        if (move === null) {
+            showNotification("Mouvement non valide", 'danger');
+            return 'snapback';
+        }
+
+        if (chessSocket && chessSocket.readyState === WebSocket.OPEN) {
+            chessSocket.send(JSON.stringify({
+                type: 'move',
+                from: source,
+                to: target,
+                piece: move.piece,
+                fen: game.fen()  // Sauvegarde de l'état
+            }));
+        } else {
+            showError('Connexion WebSocket perdue. Reconnexion en cours...');
+            game.undo();
+            return 'snapback';
+        }
+
+        board.position(game.fen());
+        updateTurn();
+        return true;
+    }
+
+    function onSnapEnd() {
+        board.position(game.fen());
+    }
+
+    function connectWebSocket() {
+        chessSocket = new WebSocket(websocketUrl);
+        
+        chessSocket.onopen = function() {
+            console.log('✅ Connecté au WebSocket');
+            showNotification('✅ Connecté à la partie', 'success');
+        };
+        
+        chessSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'move') {
+                const move = game.move({
+                    from: data.from,
+                    to: data.to,
+                    promotion: 'q'
+                });
+                
+                if (move) {
+                    board.position(game.fen());
+                    addMoveToList(data);
+                    updateTurn();
+                }
+                
+            } else if (data.type === 'game_update') {
+                showNotification('Mise à jour de la partie', 'info');
+                
+            } else if (data.type === 'error') {
+                showError(data.message);
+            }
+        };
+
+        chessSocket.onclose = function() {
+            console.log('❌ Déconnecté');
+            setTimeout(connectWebSocket, 3000);
+        };
+    }
+
+    function updateTurnIndicator() {
+        const currentTurnElement = document.getElementById('current-turn');
+        if (!currentTurnElement) return;
+        
+        const currentTurn = currentTurnElement.textContent.trim();
+        isMyTurn = (userRole === 'white' && currentTurn === 'white') || 
+                   (userRole === 'black' && currentTurn === 'black');
+        
+        if (isMyTurn) {
+            showNotification('🎉 C\'est votre tour de jouer !', 'success');
+        }
+    }
+
+    function updateTurn() {
+        const currentTurn = document.getElementById('current-turn');
+        if (currentTurn) {
+            const newTurn = currentTurn.textContent.trim() === 'white' ? 'black' : 'white';
+            currentTurn.textContent = newTurn;
+            currentTurn.className = `badge ${newTurn === 'white' ? 'bg-light text-dark' : 'bg-dark'} text-capitalize`;
+            updateTurnIndicator();
+        }
+    }
+
+    function addMoveToList(data) {
+        const movesList = document.getElementById('moves-list');
+        
+        const emptyMessage = movesList.querySelector('.text-center');
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+        
+        const moveElement = document.createElement('div');
+        moveElement.className = 'border-bottom py-2 move-item';
+        moveElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong class="text-primary">${movesList.children.length + 1}.</strong>
+                    <span class="ms-2 fw-bold">${data.piece}${data.to}</span>
+                </div>
+                <small class="text-muted">${data.player}</small>
+            </div>
+        `;
+        movesList.appendChild(moveElement);
+        movesList.scrollTop = movesList.scrollHeight;
+    }
+
+    function showNotification(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        toast.innerHTML = `
+            <strong>${type === 'danger' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}</strong>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 4000);
+    }
+
+    function showError(message) {
+        showNotification(message, 'danger');
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeBoard();
+        connectWebSocket();
+        
+        document.getElementById('flipBoard').addEventListener('click', function() {
+            board.flip();
+        });
+        
+        document.getElementById('resignBtn').addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir abandonner la partie ?')) {
+                if (chessSocket && chessSocket.readyState === WebSocket.OPEN) {
+                    chessSocket.send(JSON.stringify({
+                        type: 'resign'
+                    }));
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    #board {
+        border: 2px solid #333;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .move-item {
+        transition: background-color 0.3s ease;
+    }
+    
+    .move-item:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    
+    @media (max-width: 768px) {
+        #board {
+            width: 350px !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        #board {
+            width: 300px !important;
+        }
+    }
+</style>
+{% endblock %}

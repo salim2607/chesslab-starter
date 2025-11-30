@@ -1,0 +1,33 @@
+{% extends 'chess_app/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>ChessLab</h1>
+        
+        <div class="mb-4">
+            {% if user.is_authenticated %}
+                <a href="{% url 'chess_app:create_game' %}" class="btn btn-success btn-lg">Nouvelle Partie</a>
+            {% else %}
+                <p>Connectez-vous pour créer une partie</p>
+            {% endif %}
+        </div>
+
+        <h3>Parties disponibles</h3>
+        {% for game in waiting_games %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <h5>Partie #{{ game.id }}</h5>
+                <p>
+                    Blanc: {{ game.white_player.username|default:"En attente" }} |
+                    Noir: {{ game.black_player.username|default:"En attente" }}
+                </p>
+                <a href="{% url 'chess_app:play_game' game.id %}" class="btn btn-primary">Rejoindre</a>
+            </div>
+        </div>
+        {% empty %}
+        <p>Aucune partie en cours</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
