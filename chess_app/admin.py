@@ -6,7 +6,7 @@ class MoveInline(admin.TabularInline):
     
     model = Move
     extra = 0
-    readonly_fields = ['timestamp']  # Correct - le champ existe dans le modèle Move
+    readonly_fields = ['created_at']  # Correct - le champ existe dans le modèle Move
 
 
 @admin.register(Game)
@@ -23,7 +23,7 @@ class GameAdmin(admin.ModelAdmin):
 @admin.register(Move)
 class MoveAdmin(admin.ModelAdmin):
     """
-    TODO 1.6: ADMIN MOVE - À COMPLÉTER
+    TODO 1.4: ADMIN MOVE - À COMPLÉTER
     """
     # TODO: Définir les colonnes à afficher
     list_display = []  # À compléter
