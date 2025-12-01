@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 class Game(models.Model):
     """
-     MODÈLE GAME - COMPLET
+    SOLUTION 1.1: MODÈLE GAME - COMPLET
     Représente une partie d'échecs complète avec deux joueurs
     """
     
@@ -79,38 +79,52 @@ class Game(models.Model):
 
 class Move(models.Model):
     """
-    TODO 1.2: MODÈLE MOVE - À COMPLÉTER
+    SOLUTION 1.2: MODÈLE MOVE - COMPLET
     Représente un coup joué dans une partie d'échecs
+    Chaque coup est lié à une partie et à un joueur
     """
     
-    # TODO: Définir les champs du modèle
-    # game (ForeignKey vers Game)
+    # RELATIONS AVEC AUTRES MODÈLES
+    
+    # Lien vers la partie (une partie a plusieurs coups)
     game = models.ForeignKey(
         Game, 
-        on_delete=models.CASCADE,   
-        related_name='moves'          
+        on_delete=models.CASCADE,     # Si partie supprimée → supprimer ses coups
+        related_name='moves'          # game.moves.all() pour tous les coups
     )
-
-    # player (ForeignKey vers User)
-
-    # move_number (IntegerField)
-
-    # piece (CharField)
-
-    # from_square (CharField)
-
-    # to_square (CharField)
-
-    # timestamp (DateTimeField)
-
     
-    """
+    # Joueur qui a fait ce coup
+    player = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE      # Si user supprimé → supprimer ses coups
+    )
+    
+    # INFORMATIONS DU COUP
+    
+    # Numéro du coup (1, 2, 3...)
+    move_number = models.IntegerField()
+    
+    # Type de pièce déplacée (notation anglaise)
+    # p=pion, n=cavalier, b=fou, r=tour, q=dame, k=roi
+    piece = models.CharField(max_length=1)
+    
+    # Case de départ (ex: 'e2', 'g1')
+    from_square = models.CharField(max_length=2)
+    
+    # Case d'arrivée (ex: 'e4', 'f3')  
+    to_square = models.CharField(max_length=2)
+    
+    # Timestamp automatique
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
     class Meta:
-    
+        """Configuration de la classe"""
         ordering = ['move_number']  # Trier par ordre chronologique
     
     def __str__(self):
-    
+        """
+        SOLUTION 1.3: MÉTHODE __STR__ - COMPLÈTE
+        Représentation textuelle d'un coup
+        Exemple: "1. Pe4" ou "2. Nf3"
+        """
         return f"{self.move_number}. {self.piece}{self.to_square}"
-
-    """

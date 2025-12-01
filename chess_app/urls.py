@@ -3,19 +3,22 @@ from . import views
 
 app_name = 'chess_app'
 
-# TODO 2.5: URLS APPLICATION - À COMPLÉTER
+# SOLUTION 2.5: URLS APPLICATION - COMPLÈTE
+# Configuration des URLs de l'application chess_app
 
 urlpatterns = [
-   # path('', views.home, name='home'),
+    # Page d'accueil - URL: http://127.0.0.1:8000/
+    path('', views.home, name='home'),
     
-    # TODO: Création de partie
-    # À compléter...
+    # Création de partie - URL: http://127.0.0.1:8000/game/new/
+    path('game/new/', views.create_game, name='create_game'),
     
-   # path('game/<int:game_id>/', views.play_game, name='play_game'),
-
+    # Page de jeu principale - URL: http://127.0.0.1:8000/game/1/
+    path('game/<int:game_id>/', views.play_game, name='play_game'),
     
-    # TODO: Rejoindre une partie
-    # À compléter...
+    # Rejoindre une partie - URL: http://127.0.0.1:8000/game/1/join/white/
+    path('game/<int:game_id>/join/<str:color>/', views.join_game, name='join_game'),
     
-   # path('players/', views.online_players, name='online_players'),
+    # BONUS - Joueurs en ligne - URL: http://127.0.0.1:8000/players/
+    path('players/', views.online_players, name='online_players'),
 ]
