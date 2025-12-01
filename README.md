@@ -55,6 +55,6 @@ chesslab-starter/
 │   ├── base.html
 │   ├── home.html
 │   └── play_game.html
-		└── online_players.html
+	└── online_players.html
 
 ```
